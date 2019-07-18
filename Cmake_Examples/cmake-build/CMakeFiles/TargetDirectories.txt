@@ -1,0 +1,4 @@
+/home/egrzrbr/W/W.priv/Examples/OpenMPI_Examples/CMAKE/cmake-build/CMakeFiles/rebuild_cache.dir
+/home/egrzrbr/W/W.priv/Examples/OpenMPI_Examples/CMAKE/cmake-build/CMakeFiles/edit_cache.dir
+/home/egrzrbr/W/W.priv/Examples/OpenMPI_Examples/CMAKE/cmake-build/CMakeFiles/OpenMPI_Example.dir
+/home/egrzrbr/W/W.priv/Examples/OpenMPI_Examples/CMAKE/cmake-build/CMakeFiles/test.dir

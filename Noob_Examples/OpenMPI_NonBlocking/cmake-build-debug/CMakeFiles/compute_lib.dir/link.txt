@@ -1,0 +1,2 @@
+/usr/bin/ar qc libcompute_lib.a  
+/usr/bin/ranlib libcompute_lib.a

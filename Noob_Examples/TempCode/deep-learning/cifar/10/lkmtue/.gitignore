@@ -1,0 +1,7 @@
+h_x
+temp
+conv_layer_old.h
+softmax_loss_layer_new.h
+im2col.cc
+.DS_Store
+fully_connected_layer_old.h

@@ -1,0 +1,136 @@
+cmake_minimum_required(VERSION 3.5)
+# Enable C++11
+
+function(JOIN OUT GLUE)
+  SET(TEMP)
+  foreach(arg IN ITEMS ${ARGN})
+	STRING(STRIP "${arg}" arg)
+  	SET(TEMP "${TEMP} ${GLUE}${arg}")
+  endforeach()
+  STRING(STRIP "${TEMP}" TEMP)
+  SET(${OUT} "${TEMP}" PARENT_SCOPE)
+endfunction()
+
+
+project(compute_lib C CXX)
+
+
+
+set(LIB_SOURCES
+        AStructs.hpp
+        )
+
+
+add_library(${PROJECT_NAME} ${LIB_SOURCES})
+set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS ON)
+set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
+
+
+
+
+project(OpenMPI_NonBlocking)
+
+
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
+
+
+#set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+
+#add_subdirectory(googletest)
+#add_subdirectory(UnitTests)
+
+
+set(OpenMPI_DIR ${CMAKE_SOURCE_DIR}/extern/OpenMPI)
+
+## Tries to make portable OpenMPI working, ended with using set(ENV...) 
+#set(CMAKE_SKIP_BUILD_RPATH FALSE)
+#set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE) 
+#set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+#set(CMAKE_INSTALL_RPATH ${OpenMPI_DIR}/lib)
+#set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath,${OpenMPI_DIR}/lib")
+
+#add_custom_command(OUTPUT LD_LIBRARY_PATH COMMAND source setup_env.sh\; my_command) 
+
+#set(CMAKE_PREFIX_PATH ${OpenMPI_DIR})
+link_directories(${OpenMPI_DIR}/lib)
+
+#find_package(MPI REQUIRED PATHS ${OpenMPI_DIR})
+#FindMPI(CXX MPICXX)
+
+#set(CMAKE_CXX_COMPILER /usr/bin/g++)
+#set(CMAKE_C_COMPILER /usr/bin/gcc)
+set(MPI_CXX_COMPILER ${OpenMPI_DIR}/bin/mpicxx)
+set(MPI_C_COMPILER ${OpenMPI_DIR}/bin/mpicc)
+set(MPIEXEC_EXECUTABLE ${OpenMPI_DIR}/bin/mpiexec)
+set(MPI_INCLUDE_PATH ${OpenMPI_DIR}/include)
+set(MPI_LIB_PATH ${OpenMPI_DIR}/lib)
+set(MPIEXEC ${MPIEXEC_EXECUTABLE})
+set(MPIEXEC_NUMPROC_FLAG "-n")
+
+set(ENV{OPAL_PREFIX} ${OpenMPI_DIR})
+set(ENV{LD_LIBRARY_PATH} ${OpenMPI_DIR}/lib)
+
+
+execute_process(COMMAND ${MPI_C_COMPILER} --showme:compile OUTPUT_VARIABLE MPI_C_COMPILE_FLAGS)
+execute_process(COMMAND ${MPI_CXX_COMPILER} --showme:compile OUTPUT_VARIABLE MPI_CXX_COMPILE_FLAGS)
+
+execute_process(COMMAND ${MPI_C_COMPILER} --showme:link OUTPUT_VARIABLE MPI_C_LINK_FLAGS)
+execute_process(COMMAND ${MPI_CXX_COMPILER} --showme:link OUTPUT_VARIABLE MPI_CXX_LINK_FLAGS)
+
+execute_process(COMMAND ${MPI_CXX_COMPILER} --showme:libs OUTPUT_VARIABLE MPI_LIBRARIES)
+
+JOIN(MPI_LIBRARIES -l "${MPI_LIBRARIES}")
+
+
+STRING(STRIP ${MPI_CXX_LINK_FLAGS} MPI_CXX_LINK_FLAGS)
+STRING(STRIP ${MPI_CXX_COMPILE_FLAGS} MPI_CXX_COMPILE_FLAGS)
+
+
+MESSAGE($ENV{OPAL_PREFIX})
+MESSAGE($ENV{LD_LIBRARY_PATH})
+
+MESSAGE(${MPI_C_COMPILE_FLAGS})
+MESSAGE(${MPI_CXX_COMPILE_FLAGS})
+
+MESSAGE(${MPI_C_LINK_FLAGS})
+MESSAGE(${MPI_CXX_LINK_FLAGS})
+
+MESSAGE(${MPI_LIBRARIES})
+
+#set(CMAKE_CXX_COMPILE_FLAGS ${CMAKE_CXX_COMPILE_FLAGS} ${MPI_CXX_COMPILE_FLAGS})
+#set(CMAKE_CXX_LINK_FLAGS ${CMAKE_CXX_LINK_FLAGS} ${MPI_CXX_LINK_FLAGS})
+
+#set(CMAKE_C_COMPILE_FLAGS ${CMAKE_CXX_COMPILE_FLAGS} ${MPI_C_COMPILE_FLAGS})
+#set(CMAKE_C_LINK_FLAGS ${CMAKE_CXX_LINK_FLAGS} ${MPI_C_LINK_FLAGS})
+
+
+set(SOURCES
+     main.mpi.cpp
+     main.mpi.h
+     MpiMaster.cpp
+     MpiMaster.h
+     MpiSlave.cpp
+     MpiSlave.h
+        AStructs.hpp
+        )
+
+add_executable(${PROJECT_NAME} ${SOURCES})
+
+target_include_directories(${PROJECT_NAME} PRIVATE ${MPI_INCLUDE_PATH})
+target_compile_options(${PROJECT_NAME} PRIVATE ${MPI_CXX_COMPILE_FLAGS})
+target_link_libraries(${PROJECT_NAME} ${MPI_LIBRARIES} ${MPI_CXX_LINK_FLAGS} )#compute_lib)
+
+target_compile_definitions(${PROJECT_NAME} PRIVATE DEBUG=3 OPAL_PREFIX=$ENV{OPAL_PREFIX} LD_LIBRARY_PATH=$ENV{LD_LIBRARY_PATH})
+
+#set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS ON)
+#set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
+
+# Add a test:
+enable_testing()
+add_test(NAME ${PROJECT_NAME}_test_000 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME})
+add_test(NAME ${PROJECT_NAME}_test_001 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME})
+add_test(NAME ${PROJECT_NAME}_test_002 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 8 --oversubscribe ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME})
+
+
+
